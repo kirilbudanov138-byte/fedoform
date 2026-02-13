@@ -103,17 +103,15 @@
 </div>
 
 <script>
-    // --- ДАННЫЕ (LocalStorage для тем и постов) ---
     let topics = JSON.parse(localStorage.getItem('ff_topics')) || ['Общее', 'Игры', 'Код', 'Мемы'];
     let posts = JSON.parse(localStorage.getItem('ff_posts')) || [];
     let currentTopic = 'Общее';
     let currentUser = null; 
     let selectedImageData = "";
 
-    // --- GOOGLE AUTH ---
     window.onload = function () {
         google.accounts.id.initialize({
-            client_id: "939338394568-gud98nng2bqsbmm1rcpomagqj9gvj42g.apps.googleusercontent.com", // <--- СЮДА ТВОЙ ID
+            client_id: "939338394568-gud98nng2bqsbmm1rcpomagqj9gvj42g.apps.googleusercontent.com",
             callback: handleCredentialResponse
         });
         init();
@@ -141,7 +139,6 @@
     }
     function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
 
-    // --- ЛОГИКА ТЕМ ---
     function renderTopics() {
         const list = document.getElementById('topicsList');
         list.innerHTML = topics.map(t => `
@@ -178,16 +175,16 @@
         }
     }
 
-    // --- ЛОГИКА ПОСТОВ ---
     function previewFile() {
-        const file = document.getElementById('fileInput').files[0];
+        const fileInput = document.getElementById('fileInput');
         const reader = new FileReader();
         reader.onloadend = () => {
             selectedImageData = reader.result;
-            document.getElementById('imgPreview').src = reader.result;
-            document.getElementById('imgPreview').style.display = 'block';
+            const img = document.getElementById('imgPreview');
+            img.src = reader.result;
+            img.style.display = 'block';
         };
-        if (file) reader.readAsDataURL(file);
+        if (fileInput.files[0]) reader.readAsDataURL(fileInput.files[0]);
     }
 
     function sendPost() {
@@ -260,6 +257,7 @@
         const text = input.value.trim();
         if (!text) return;
         const post = posts.find(p => p.id === postId);
+        if (!post.comments) post.comments = [];
         post.comments.push({ author: currentUser.name, text: text });
         localStorage.setItem('ff_posts', JSON.stringify(posts));
         renderPosts();
@@ -283,6 +281,3 @@
 </script>
 </body>
 </html>
-
-
-
