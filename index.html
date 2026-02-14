@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fedoform — AI Social Network</title>
+    <style>
+        :root { --primary: #0084ff; --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; color: var(--text); }
+
+        /* Сайдбар */
+        .sidebar { width: 300px; background: var(--card); border-right: 1px solid #ddd; padding: 25px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        .logo-box { display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 10px; }
+        .logo-text { font-size: 28px; font-weight: 900; color: var(--primary); letter-spacing: -1.5px; }
+        .logo-text span { color: #333; }
+
+        .section-title { font-size: 0.75rem; font-weight: 700; color: #8d949e; text-transform: uppercase; margin-top: 15px; }
+        .nav-item { padding: 12px 15px; border-radius: 10px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; font-weight: 500; position: relative; }
+        .nav-item:hover { background: #f2f3f5; }
+        .nav-item.active { background: #e7f3ff; color: var(--primary); font-weight: bold; }
+
+        .btn-main { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
+        .btn-main:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* Основной контент */
+        .main-content { flex-grow: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; align-items: center; }
+        .feed { width: 100%; max-width: 580px; }
+
+        /* Посты */
+        .post { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #efefef; }
+        .post-header { font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .post-img { width: calc(100% + 40px); margin: 15px -20px; max-height: 400px; object-fit: cover; border-radius: 4px; }
+        
+        .comment { background: #f8f9fa; padding: 8px 12px; border-radius: 10px; margin-bottom: 5px; font-size: 0.9rem; border: 1px solid #eee; }
+        .comm-author { font-weight: bold; color: var(--primary); font-size: 0.8rem; }
+
+        /* Профиль */
+        .profile-card { background: white; border-radius: 20px; padding: 30px; width: 100%; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .profile-avatar { width: 80px; height: 80px; background: #eee; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; border: 3px solid var(--primary); }
+        .stats-row { display: flex; justify-content: center; gap: 20px; margin: 20px 0; padding: 15px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; }
+        .badge-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        .badge-card { background: #f9f9f9; padding: 10px; border-radius: 10px; opacity: 0.3; filter: grayscale(1); transition: 0.3s; }
+        .badge-card.unlocked { opacity: 1; filter: grayscale(0); border: 1px solid gold; background: #fffdf0; }
+
+        /* Чат */
+        .chat-window { background: white; border-radius: 20px; width: 100%; height: 500px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .chat-msgs { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #f9f9f9; }
+        .msg { max-width: 80%; padding: 10px; border-radius: 12px; font-size: 0.9rem; }
+        .msg.ai { align-self: flex-start; background: #e7f3ff; color: #0056b3; border-bottom-left-radius: 2px; }
+        .msg.user { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
+
+        /* Модалка и Бот */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
+        #ai-bot { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; color: white; padding: 15px; border-radius: 15px; width: 240px; display: none; border-left: 5px solid var(--primary); z-index: 3000; }
+        
+        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo-box" onclick="showFeed()">
+        <svg width="35" height="35" viewBox="0 0 100 100" fill="none">
+            <rect width="100" height="100" rx="20" fill="#0084ff"/>
+            <path d="M35 25H65V35H45V45H60V55H45V75H35V25Z" fill="white"/>
+            <circle cx="70" cy="70" r="10" fill="#333" stroke="white" stroke-width="3"/>
+        </svg>
+        <div class="logo-text">Fedo<span>form</span></div>
+    </div>
+    
+    <div id="authArea">
+        <button class="btn-main" onclick="openAuth()">Войти / Регистрация</button>
+    </div>
+
+    <div id="userArea" style="display:none" onclick="showProfile()" style="cursor:pointer">
+        <div style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #eee; position:relative;">
+            <div id="uName" style="font-weight:bold; color:var(--primary);">👤 Загрузка...</div>
+            <div id="uBadges" style="font-size:1.1rem; margin-top:5px;"></div>
+            <button onclick="event.stopPropagation(); logout()" style="color:red; border:none; background:none; cursor:pointer; font-size:11px; margin-top:5px;">Выход</button>
+        </div>
+    </div>
+
+    <div class="section-title">Навигация</div>
+    <div class="nav-item" onclick="showFeed()" id="nav-feed">🏠 Лента новостей</div>
+    <div class="nav-item" onclick="showChat()" id="nav-chat">🤖 Чат с Fedo AI</div>
+
+    <div class="section-title">Темы</div>
+    <div id="topicsList"></div>
+    <button onclick="createTopic()" style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:600; padding:10px;">+ Создать тему</button>
+</div>
+
+<div class="main-content">
+    <div class="feed" id="wallCont">
+        <div id="editor" style="display:none" class="post">
+            <textarea id="postText" placeholder="Что нового?" rows="2"></textarea>
+            <img id="imgPreview" style="width:100%; display:none; border-radius:10px; margin-top:10px;">
+            <div style="display:flex; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid #eee;">
+                <label style="cursor:pointer; color:var(--primary); font-weight:600;">📷 Фото <input type="file" id="fileInp" hidden onchange="prevImg()"></label>
+                <button class="btn-main" style="width:auto; padding:5px 20px;" onclick="addPost()">Пост</button>
+            </div>
+        </div>
+        <div id="wall"></div>
+    </div>
+</div>
+
+<!-- Модалки -->
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <h2>Регистрация</h2>
+        <input type="text" id="regName" placeholder="Придумайте ник">
+        <div id="aiInp" style="display:none"><input type="text" id="aiCodeInp" placeholder="Код от ИИ"></div>
+        <button class="btn-main" id="authBtn" onclick="askCode()">Получить код</button>
+        <button onclick="closeAuth()" style="background:none; border:none; color:#aaa; cursor:pointer; margin-top:10px;">Отмена</button>
+    </div>
+</div>
+
+<div id="ai-bot"><strong>🤖 Fedo AI:</strong><p id="aiMsg"></p></div>
+
+<script>
+    // --- ДАННЫЕ ---
+    let topics = JSON.parse(localStorage.getItem('ff_topics')) || [{name:'Общее', owner:'Система'}, {name:'Мемы', owner:'Система'}];
+    let posts = JSON.parse(localStorage.getItem('ff_posts')) || [];
+    let user = JSON.parse(localStorage.getItem('ff_user')) || null;
+    let curTopic = 'Общее';
+    let currentView = 'feed'; 
+    let curCode = null;
+    let tempImg = "";
+
+    const ACHIEVEMENTS = {
+        first_post: { name: "Писатель", icon: "✍️", hint: "Сделал первый пост" },
+        first_comm: { name: "Собеседник", icon: "💬", hint: "Первый комментарий" },
+        liked: { name: "Любимчик", icon: "❤️", hint: "Получил лайк" }
+    };
+
+    // --- ИНИЦИАЛИЗАЦИЯ ---
+    function init() {
+        renderTopics();
+        render();
+        if(user) {
+            document.getElementById('authArea').style.display='none';
+            document.getElementById('userArea').style.display='block';
+            updateUserUI();
+        }
+    }
+
+    // --- НАВИГАЦИЯ ---
+    function render() {
+        const wallCont = document.getElementById('wallCont');
+        const wall = document.getElementById('wall');
+        const editor = document.getElementById('editor');
+        
+        editor.style.display = (currentView === 'feed' && user) ? 'block' : 'none';
+
+        if(currentView === 'feed') renderPosts();
+        else if(currentView === 'profile') renderProfilePage();
+        else if(currentView === 'chat') renderChatPage();
+    }
+
+    function showFeed() { currentView = 'feed'; render(); }
+    function showProfile() { currentView = 'profile'; render(); }
+    function showChat() { currentView = 'chat'; render(); }
+
+    // --- ТЕМЫ ---
+    function renderTopics() {
+        const l = document.getElementById('topicsList');
+        l.innerHTML = topics.map(t => {
+            const isOwner = user && t.owner === user.name;
+            return `
+            <div class="nav-item ${t.name === curTopic ? 'active' : ''}" onclick="curTopic='${t.name}'; showFeed(); renderTopics();">
+                # ${t.name}
+                ${isOwner ? `<button onclick="deleteTopic(event, '${t.name}')" style="background:none; border:none; color:red; cursor:pointer; margin-left:auto;">×</button>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    function createTopic() {
+        if(!user) return aiSay("Войдите в Fedoform!");
+        let n = prompt("Название темы:").trim();
+        if(n && !topics.find(x => x.name === n)) {
+            topics.push({name: n, owner: user.name});
+            localStorage.setItem('ff_topics', JSON.stringify(topics));
+            renderTopics();
+        }
+    }
+
+    function deleteTopic(e, name) {
+        e.stopPropagation();
+        if(confirm(`Удалить тему #${name}?`)) {
+            topics = topics.filter(t => t.name !== name);
+            posts = posts.filter(p => p.topic !== name);
+            localStorage.setItem('ff_topics', JSON.stringify(topics));
+            localStorage.setItem('ff_posts', JSON.stringify(posts));
+            curTopic = 'Общее';
+            renderTopics(); renderPosts();
+        }
+    }
+
+    // --- АВТОРИЗАЦИЯ ---
+    function openAuth() { document.getElementById('authModal').style.display='flex'; }
+    function closeAuth() { document.getElementById('authModal').style.display='none'; }
+    function askCode() {
+        let n = document.getElementById('regName').value;
+        if(!n) return;
+        curCode = Math.floor(1000 + Math.random()*9000);
+        document.getElementById('aiInp').style.display='block';
+        document.getElementById('authBtn').innerText='Подтвердить';
+        document.getElementById('authBtn').onclick=confirmAuth;
+        aiSay(`Секретный код для ${n}: ${curCode}`);
+    }
+    function confirmAuth() {
+        if(document.getElementById('aiCodeInp').value == curCode) {
+            user = { name: document.getElementById('regName').value, likes: [], achievements: [], email: null };
+            localStorage.setItem('ff_user', JSON.stringify(user));
+            location.reload();
+        } else { alert("Неверный код!"); }
+    }
+    function logout() { localStorage.removeItem('ff_user'); location.reload(); }
+
+    // --- ПРОФИЛЬ ---
+    function renderProfilePage() {
+        const wall = document.getElementById('wall');
+        const myPosts = posts.filter(p => p.author === user.name);
+        const myLikes = myPosts.reduce((s, p) => s + p.likes, 0);
+        
+        wall.innerHTML = `
+            <div class="profile-card">
+                <div class="profile-avatar">👤</div>
+                <h2>${user.name}</h2>
+                <p id="emailDisp" style="color:gray;">${user.email || 'Почта не привязана'}</p>
+                ${!user.email ? `<button class="btn-main" style="width:auto; font-size:0.8rem;" onclick="linkEmail()">Привязать почту</button>` : ''}
+                
+                <div class="stats-row">
+                    <div><b>${myPosts.length}</b><br>Постов</div>
+                    <div><b>${myLikes}</b><br>Лайков</div>
+                    <div><b>${user.achievements.length}</b><br>Наград</div>
+                </div>
+
+                <h3 style="text-align:left;">Достижения</h3>
+                <div class="badge-grid">
+                    ${Object.keys(ACHIEVEMENTS).map(key => `
+                        <div class="badge-card ${user.achievements.includes(key) ? 'unlocked' : ''}">
+                            <div style="font-size:1.5rem;">${ACHIEVEMENTS[key].icon}</div>
+                            <div style="font-size:0.6rem; font-weight:bold;">${ACHIEVEMENTS[key].name}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    function linkEmail() {
+        let global = JSON.parse(localStorage.getItem('ff_emails')) || [];
+        let e = prompt("Введите почту:").toLowerCase().trim();
+        if(e && e.includes('@')) {
+            if(global.includes(e)) return alert("Эта почта уже занята!");
+            user.email = e;
+            global.push(e);
+            localStorage.setItem('ff_user', JSON.stringify(user));
+            localStorage.setItem('ff_emails', JSON.stringify(global));
+            renderProfilePage();
+            aiSay("Почта успешно защищена!");
+        }
+    }
+
+    // --- ЛЕНТА ПОСТОВ (С ЗАЩИТОЙ КНОПОК) ---
+    function renderPosts() {
+        const wall = document.getElementById('wall');
+        const list = posts.filter(p => p.topic === curTopic);
+        wall.innerHTML = list.map(p => {
+            const isMyPost = user && p.author === user.name;
+            const isL = user && user.likes.includes(p.id);
+            const comms = (p.comments || []).map(c => `<div class="comment"><div class="comm-author">${c.u}</div>${c.t}</div>`).join('');
+            
+            return `
+                <div class="post">
+                    <div class="post-header">
+                        <div style="width:25px; height:25px; background:#ddd; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.7rem;">👤</div>
+                        ${p.author}
+                        <span style="font-size:0.7rem; color:gray; margin-left:auto;">#${p.topic}</span>
+                    </div>
+                    <div style="font-size:1.1rem;">${p.content}</div>
+                    ${p.img ? `<img src="${p.img}" class="post-img">`:''}
+                    
+                    <div style="margin-top:10px; display:flex; gap:15px; align-items:center;">
+                        <button onclick="like(${p.id})" style="border:none; background:none; cursor:pointer; color:${isL?'red':'#666'}">${isL?'❤️':'🤍'} ${p.likes}</button>
+                        ${isMyPost ? `<button onclick="delPost(${p.id})" style="border:none; background:none; cursor:pointer; opacity:0.6;">🗑️</button>` : ''}
+                    </div>
+
+                    <div style="margin-top:10px; border-top:1px solid #f0f2f5; padding-top:10px;">
+                        ${comms}
+                        ${user ? `
+                        <div style="display:flex; gap:5px; margin-top:8px;">
+                            <input id="ci-${p.id}" style="flex-grow:1; border-radius:20px; border:1px solid #ddd; padding:5px 12px; font-size:0.8rem;" placeholder="Ответить...">
+                            <button onclick="addComm(${p.id})" class="btn-main" style="width:auto; padding:2px 10px;">➜</button>
+                        </div>` : '<p style="font-size:0.7rem; color:gray; text-align:center;">Войдите, чтобы отвечать</p>'}
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    // --- ФУНКЦИИ ВЗАИМОДЕЙСТВИЯ ---
+    function prevImg() {
+        let f = document.getElementById('fileInp').files;
+        let r = new FileReader();
+        r.onloadend = () => { tempImg = r.result; document.getElementById('imgPreview').src=r.result; document.getElementById('imgPreview').style.display='block'; };
+        if(f) r.readAsDataURL(f[0]);
+    }
+
+    function addPost() {
+        let t = document.getElementById('postText').value.trim();
+        if(!t && !tempImg) return;
+        posts.unshift({ id:Date.now(), author:user.name, topic:curTopic, content:t, img:tempImg, likes:0, comments:[] });
+        localStorage.setItem('ff_posts', JSON.stringify(posts));
+        checkAch('first_post');
+        location.reload();
+    }
+
+    function addComm(id) {
+        let inp = document.getElementById('ci-'+id);
+        if(!inp.value) return;
+        let p = posts.find(x => x.id === id);
+        p.comments.push({u: user.name, t: inp.value});
+        localStorage.setItem('ff_posts', JSON.stringify(posts));
+        checkAch('first_comm');
+        renderPosts();
+    }
+
+    function like(id) {
+        if(!user) return openAuth();
+        let p = posts.find(x => x.id === id);
+        if(user.likes.includes(id)) { p.likes--; user.likes = user.likes.filter(x=>x!==id); }
+        else { p.likes++; user.likes.push(id); checkAch('liked'); }
+        localStorage.setItem('ff_posts', JSON.stringify(posts));
+        localStorage.setItem('ff_user', JSON.stringify(user));
+        renderPosts();
+    }
+
+    function delPost(id) {
+        if(confirm("Удалить твой пост навсегда?")) {
+            posts = posts.filter(x=>x.id!==id);
+            localStorage.setItem('ff_posts', JSON.stringify(posts));
+            renderPosts();
+        }
+    }
+
+    // --- ЧАТ С БОТОМ ---
+    function renderChatPage() {
+        const wall = document.getElementById('wall');
+        wall.innerHTML = `
+            <div class="chat-window">
+                <div class="chat-msgs" id="chatList">
+                    <div class="msg ai">Привет! Я Fedo AI. Я помогу тебе разобраться в Fedoform.</div>
+                </div>
+                <div style="padding:15px; border-top:1px solid #eee; display:flex; gap:10px;">
+                    <input type="text" id="aiIn" placeholder="Спроси меня..." onkeypress="if(event.key=='Enter') aiChat()">
+                    <button onclick="aiChat()" class="btn-main" style="width:auto;">➜</button>
+                </div>
+            </div>`;
+    }
+
+    function aiChat() {
+        let i = document.getElementById('aiIn');
+        if(!i.value) return;
+        let l = document.getElementById('chatList');
+        l.innerHTML += `<div class="msg user">${i.value}</div>`;
+        let q = i.value.toLowerCase();
+        i.value = '';
+        setTimeout(() => {
+            let a = "Хм, интересно! Можешь рассказать подробнее?";
+            if(q.includes("привет")) a = "Привет-привет! Что нового в мире Fedoform?";
+            if(q.includes("ачивк") || q.includes("наград")) a = "Награды дают за посты, комменты и первый лайк. Проверь свой профиль!";
+            if(q.includes("как дела")) a = "Мои нейроны работают отлично! Готов помогать.";
+            l.innerHTML += `<div class="msg ai">${a}</div>`;
+            l.scrollTop = l.scrollHeight;
+        }, 600);
+    }
+
+    function aiSay(m) {
+        const bot = document.getElementById('ai-bot');
+        document.getElementById('aiMsg').innerText = m;
+        bot.style.display = 'block';
+        setTimeout(() => bot.style.display = 'none', 8000);
+    }
+
+    function checkAch(id) {
+        if(user && !user.achievements.includes(id)) {
+            user.achievements.push(id);
+            localStorage.setItem('ff_user', JSON.stringify(user));
+            aiSay(`🏆 Награда: ${ACHIEVEMENTS[id].name}!`);
+        }
+    }
+
+    function updateUserUI() {
+        if(!user) return;
+        document.getElementById('uName').innerText = "👤 " + user.name;
+        document.getElementById('uBadges').innerHTML = user.achievements.map(a => ACHIEVEMENTS[a].icon).join(' ');
+    }
+
+    init();
+</script>
+</body>
+</html>
+
+
+
+
+
+
